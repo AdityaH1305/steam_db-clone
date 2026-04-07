@@ -1,0 +1,245 @@
+{% extends "base.html" %}
+{% block title %}{{ name }} — SteamDB Clone{% endblock %}
+
+{% block content %}
+<div class="wrap">
+  <!-- HERO BANNER -->
+  <section class="hero">
+    <img class="hero-bg" src="{{ cover_url }}" alt="{{ name }} cover">
+    <div class="hero-bar">
+      <div class="hero-title">
+        <div>{{ name }}</div>
+        <div class="hero-sub">AppID #{{ appid }}</div>
+      </div>
+      <div class="hero-actions">
+        <button class="btn btn-ghost btn-sm" id="favBtn" onclick="toggleFav()"
+                title="Add to favorites">
+          <span id="favIcon">🤍</span>
+        </button>
+        <button class="btn btn-ghost btn-sm"
+                onclick="addToCompare('{{ appid }}', '{{ name|e }}')"
+                title="Add to compare">
+          🆚 Compare
+        </button>
+        <a class="btn btn-primary btn-sm" href="{{ store_url }}" target="_blank" rel="noopener">
+          View on Steam →
+        </a>
+      </div>
+    </div>
+  </section>
+
+  <!-- CONTENT GRID -->
+  <section class="game-grid">
+    <!-- LEFT COLUMN: Cover + Value + Vibes -->
+    <div>
+      <div class="card card-flat">
+        <div class="cover-wrap">
+          <img src="https://cdn.cloudflare.steamstatic.com/steam/apps/{{ appid }}/library_600x900.jpg"
+               alt="{{ name }} cover portrait"
+               onerror="this.style.display='none'">
+        </div>
+
+        <!-- VALUE SCORE -->
+        <div class="value-card">
+          <div class="value-top">
+            <div class="v-badge">
+              <span class="v-score">{{ value_score }}</span>
+              <span>Value Score</span>
+            </div>
+            <div class="v-label">{{ value_label }}</div>
+          </div>
+
+          <!-- Breakdown Bars -->
+          <div class="v-bars">
+            <div class="v-bar-row">
+              <span class="v-bar-label">Playtime</span>
+              <div class="v-bar-track">
+                <div class="v-bar-fill playtime" style="width: {{ value_debug.playtime_pct }}%"></div>
+              </div>
+              <span class="v-bar-val">{{ value_debug.playtime_pct }}%</span>
+            </div>
+            <div class="v-bar-row">
+              <span class="v-bar-label">Positivity</span>
+              <div class="v-bar-track">
+                <div class="v-bar-fill positivity" style="width: {{ value_debug.positivity_pct }}%"></div>
+              </div>
+              <span class="v-bar-val">{{ value_debug.positivity_pct }}%</span>
+            </div>
+            <div class="v-bar-row">
+              <span class="v-bar-label">Confidence</span>
+              <div class="v-bar-track">
+                <div class="v-bar-fill confidence" style="width: {{ value_debug.confidence_pct }}%"></div>
+              </div>
+              <span class="v-bar-val">{{ value_debug.confidence_pct }}%</span>
+            </div>
+          </div>
+
+          <!-- Stat Chips -->
+          <div class="v-grid">
+            <div class="v-chip">
+              <div class="label">Median Playtime</div>
+              <div><strong>{{ '%.1f' % value_debug.effective_hours }}</strong> hrs</div>
+            </div>
+            <div class="v-chip">
+              <div class="label">Positivity</div>
+              <div><strong>{{ '%.0f' % (stats.positivity * 100) }}%</strong> ({{ stats.total_reviews }} reviews)</div>
+            </div>
+            <div class="v-chip">
+              <div class="label">Price (USD)</div>
+              <div><strong>${{ '%.2f' % usd_price if usd_price else '—' }}</strong></div>
+            </div>
+          </div>
+
+          <!-- Review Trend -->
+          <div class="review-trend">
+            <div class="trend-box">
+              <div class="trend-label">Overall</div>
+              {% set overall_pct = (stats.positivity * 100)|int %}
+              <div class="trend-val {% if overall_pct >= 70 %}positive{% elif overall_pct >= 50 %}neutral{% else %}negative{% endif %}">
+                {{ overall_pct }}%
+              </div>
+            </div>
+            <div class="trend-box">
+              <div class="trend-label">Recent</div>
+              {% set recent_pct = (stats.recent_positivity * 100)|int %}
+              <div class="trend-val {% if recent_pct >= 70 %}positive{% elif recent_pct >= 50 %}neutral{% else %}negative{% endif %}">
+                {{ recent_pct }}%
+              </div>
+            </div>
+            <div class="trend-box">
+              <div class="trend-label">Trend</div>
+              {% set diff = recent_pct - overall_pct %}
+              <div class="trend-val {% if diff > 2 %}positive{% elif diff < -2 %}negative{% else %}neutral{% endif %}">
+                {% if diff > 0 %}↑ +{{ diff }}%{% elif diff < 0 %}↓ {{ diff }}%{% else %}→ Same{% endif %}
+              </div>
+            </div>
+          </div>
+
+          <!-- Vibes -->
+          <div class="vibes-row">
+            {% for t in vibe_info.top %}
+              <span class="badge-outline badge">{{ t.emoji }} {{ t.label }} <strong>{{ t.score }}</strong></span>
+            {% endfor %}
+          </div>
+        </div>
+
+        <p class="meta-note">
+          💡 Value Score combines playtime, review positivity, and price — normalised to 0–100.
+        </p>
+      </div>
+    </div>
+
+    <!-- RIGHT COLUMN: Prices -->
+    <div>
+      <div class="prices-card">
+        <h2>🌍 Regional Prices</h2>
+
+        <div class="price-row header">
+          <div>Region</div>
+          <div>Price</div>
+          <div class="hide-mobile">Currency</div>
+          <div class="hide-mobile">vs USD</div>
+          <div>Discount</div>
+        </div>
+
+        {% for p in all_prices %}
+        <div class="price-row {% if p.is_cheapest %}cheapest{% endif %}">
+          <div class="region-cell">
+            <span class="flag">{{ get_flag(p.region) }}</span>
+            <span>{{ get_region_name(p.region) }}</span>
+            {% if p.is_cheapest %}<span class="badge badge-green" style="font-size:10px;">Cheapest</span>{% endif %}
+          </div>
+
+          <div class="price-cell">
+            {% if p.final == 0 %}
+              <span class="free-tag">Free to Play</span>
+            {% else %}
+              {% if p.discount and p.discount > 0 %}
+                <span class="strike">{{ get_symbol(p.currency) }}{{ '%.2f' % p.initial }}</span>
+              {% endif %}
+              <strong>{{ get_symbol(p.currency) }}{{ '%.2f' % p.final }}</strong>
+            {% endif %}
+          </div>
+
+          <div class="hide-mobile">{{ p.currency or '—' }}</div>
+
+          <div class="hide-mobile">
+            {% if p.vs_usd_pct is defined %}
+              {% if p.vs_usd_pct < -1 %}
+                <span class="vs-usd cheaper">{{ '%.1f' % p.vs_usd_pct }}%</span>
+              {% elif p.vs_usd_pct > 1 %}
+                <span class="vs-usd pricier">+{{ '%.1f' % p.vs_usd_pct }}%</span>
+              {% else %}
+                <span class="vs-usd same">≈ same</span>
+              {% endif %}
+            {% else %}
+              —
+            {% endif %}
+          </div>
+
+          <div>
+            {% if p.discount and p.discount > 0 %}
+              <span class="badge">-{{ p.discount }}%</span>
+            {% else %}
+              —
+            {% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+
+      <!-- RECOMMENDATIONS (lazy loaded) -->
+      <h2 class="section-title">🎮 Similar Games</h2>
+      <div id="recs-container">
+        <div class="recs-scroll">
+          <div class="skeleton skeleton-card" style="flex:0 0 200px;height:160px;"></div>
+          <div class="skeleton skeleton-card" style="flex:0 0 200px;height:160px;"></div>
+          <div class="skeleton skeleton-card" style="flex:0 0 200px;height:160px;"></div>
+          <div class="skeleton skeleton-card" style="flex:0 0 200px;height:160px;"></div>
+        </div>
+      </div>
+    </div>
+  </section>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Track recently viewed
+  addRecentlyViewed('{{ appid }}', '{{ name|e }}', '{{ cover_url }}');
+
+  // Favorite button state
+  const favBtn = document.getElementById('favBtn');
+  const favIcon = document.getElementById('favIcon');
+  if (isFavorite('{{ appid }}')) favIcon.textContent = '❤️';
+
+  function toggleFav() {
+    const active = toggleFavorite('{{ appid }}', '{{ name|e }}', '{{ cover_url }}');
+    favIcon.textContent = active ? '❤️' : '🤍';
+  }
+
+  // Lazy load recommendations (uses session cache)
+  cachedFetch('/api/recommendations/{{ appid }}')
+    .then(items => {
+      const container = document.getElementById('recs-container');
+      if (!items.length) {
+        container.innerHTML = '<p style="color:var(--muted);font-size:14px;">No similar games found.</p>';
+        return;
+      }
+      container.innerHTML = '<div class="recs-scroll">' + items.map(g => `
+        <a href="/game/${g.appid}" class="rec-card" title="${escapeHtml(g.name)}">
+          <img src="${g.cover}" alt="${escapeHtml(g.name)}" loading="lazy"
+               onerror="this.src='https://cdn.cloudflare.steamstatic.com/steam/apps/${g.appid}/header.jpg'">
+          <div class="rec-info">
+            <div class="rec-name">${escapeHtml(g.name)}</div>
+            <div class="rec-reason">${escapeHtml(g.match_reason)}</div>
+          </div>
+        </a>
+      `).join('') + '</div>';
+    })
+    .catch(() => {
+      document.getElementById('recs-container').innerHTML =
+        '<p style="color:var(--muted);font-size:14px;">Could not load recommendations.</p>';
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,54 @@
+{% extends "base.html" %}
+{% block title %}SteamDB Clone — Game Search{% endblock %}
+
+{% block content %}
+<div class="search-hero">
+  <h1>Steam <span class="glow">Game Finder</span></h1>
+  <p class="tagline">Search any Steam game — see prices, value scores, vibes, and more.</p>
+
+  <form method="POST" action="/game" id="searchForm" autocomplete="off">
+    <div class="search-box">
+      <input type="text" id="game_input" name="game_input"
+             placeholder="Enter game name or Steam App ID…" required>
+      <button type="button" class="clear-btn" id="clear_btn" aria-label="Clear">×</button>
+      <input type="hidden" id="game_input_id" name="game_input_id" value="">
+      <div id="autocomplete-list" class="dropdown"></div>
+    </div>
+    <button type="submit" class="btn btn-primary" style="margin-top:12px;width:100%;max-width:560px;">
+      🔍 Search
+    </button>
+  </form>
+
+  <!-- Recently Viewed -->
+  <div class="home-section" id="recent-section" style="display:none;width:100%;max-width:800px;">
+    <h2>🕐 Recently Viewed</h2>
+    <div class="home-scroll" id="recent-scroll"></div>
+  </div>
+
+  <!-- Favorites -->
+  <div class="home-section" id="fav-section" style="display:none;width:100%;max-width:800px;">
+    <h2>❤️ Favorites</h2>
+    <div class="home-scroll" id="fav-scroll"></div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+  // Init autocomplete
+  initSearchAutocomplete(
+    document.getElementById('game_input'),
+    document.getElementById('game_input_id'),
+    document.getElementById('autocomplete-list'),
+    document.getElementById('clear_btn'),
+    document.getElementById('searchForm')
+  );
+
+  // Focus on load
+  document.getElementById('game_input').focus();
+
+  // Render recent & favorites
+  renderHomeSection('recent-scroll', getRecentlyViewed());
+  renderHomeSection('fav-scroll', getFavorites());
+</script>
+{% endblock %}
