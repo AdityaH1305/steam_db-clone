@@ -1,15 +1,14 @@
 {% extends "base.html" %}
-{% block title %}SteamDB Clone — Game Search{% endblock %}
+{% block title %}LudoScope — Game Search{% endblock %}
 
 {% block content %}
 <div class="search-hero">
-  <h1>Steam <span class="glow">Game Finder</span></h1>
-  <p class="tagline">Search any Steam game — see prices, value scores, vibes, and more.</p>
+  <h1>Ludo<span class="glow">Scope</span></h1>
+  <p class="tagline">Discover game value, vibes, and pricing insights.</p>
 
   <form method="POST" action="/game" id="searchForm" autocomplete="off">
     <div class="search-box">
-      <input type="text" id="game_input" name="game_input"
-             placeholder="Enter game name or Steam App ID…" required>
+      <input type="text" id="game_input" name="game_input" placeholder="Enter game name or Steam App ID…" required>
       <button type="button" class="clear-btn" id="clear_btn" aria-label="Clear">×</button>
       <input type="hidden" id="game_input_id" name="game_input_id" value="">
       <div id="autocomplete-list" class="dropdown"></div>
