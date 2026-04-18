@@ -253,10 +253,5 @@ to create a **mini SteamDB-like platform with additional insights**.
 
 ## 👤 Author
 
-Built by you 🚀
+Built by Aditya Harikrishnan
 
----
-
-## 📄 License
-
-MIT License (or choose your preferred license)
